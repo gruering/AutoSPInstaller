@@ -764,6 +764,17 @@ Function InstallPrerequisites ([xml]$xmlInput)
                                                                                         "
                     If (-not $?) {Throw}
                 }
+                elseif ($spYear -eq 2022) #SharePoint Server Subscription Edition
+                {
+                    Write-Host -ForegroundColor Cyan "  - Running Prerequisite Installer (offline mode)..." -NoNewline
+                    $startTime = Get-Date
+                    Start-Process "$env:SPbits\PrerequisiteInstaller.exe" -ArgumentList "/unattended `
+                                                                                         /WCFDataServices56:`"$env:SPbits\PrerequisiteInstallerFiles\WcfDataServices.exe`" `
+                                                                                         /DotNet48:`"$env:SPbits\PrerequisiteInstallerFiles\ndp48-x86-x64-allos-enu.exe`" `
+                                                                                         /MSVCRT142:`"$env:SPbits\PrerequisiteInstallerFiles\vc_redist.x64.exe`" `
+                                                                                        "
+                    If (-not $?) {Throw}
+                }
             }
             else # Regular prerequisite install - download required files
             {
@@ -3001,7 +3012,7 @@ Function CreateWebApp ([System.Xml.XmlElement]$webApp)
                     $primaryUser = $site.RootWeb.EnsureUser($ownerAlias)
                     $secondaryUser = $site.RootWeb.EnsureUser("$env:USERDOMAIN\$env:USERNAME")
                     $title = $site.RootWeb.title
-                    if ($spYear -ne 2019) # This seems to cause an "access denied" error with SP2019, at least on the first attempt
+                    if ($spYear -lt 2019) # This seems to cause an "access denied" error with SP2019 and newer, at least on the first attempt
                     {
                         Write-Host -ForegroundColor White " - Ensuring default groups are created..."
                         $site.RootWeb.CreateDefaultAssociatedGroups($primaryUser, $secondaryUser, $title)
@@ -4491,7 +4502,7 @@ Function ConfigureDistributedCacheService ([xml]$xmlInput)
     {
         WriteLine
         $spservice = Get-SPManagedAccountXML $xmlInput -CommonName "spservice"
-        $distributedCachingSvc = (Get-SPFarm).Services | Where-Object {$_.Name -eq "AppFabricCachingService"}
+        $distributedCachingSvc = (Get-SPFarm).Services | Where-Object {$_.Name -eq "AppFabricCachingService" -or $_.Name -eq "SPCache"}
         # Check if we should disable the Distributed Cache service on the local server
         # Ensure the node exists in the XML first as we don't want to inadvertently disable the service if it wasn't explicitly specified
         $serviceInstances = Get-SPServiceInstance | Where-Object {$_.GetType().ToString() -eq "Microsoft.SharePoint.DistributedCaching.Utilities.SPDistributedCacheServiceInstance"}
@@ -6820,7 +6831,9 @@ Function Set-PDFSearchAndIcon ([xml]$xmlInput)
         # More granular and generally preferable to setting the whole web app to "Permissive" file handling
         $mimeType = "application/pdf"
         Write-Host -ForegroundColor White " - Adding PDF MIME type `"$mimeType`" web apps..."
-        Add-SharePointPSSnapin
+        if ($spYear -lt 2022) {
+            Add-SharePointPSSnapin
+        }
         ForEach ($webAppConfig in $xmlInput.Configuration.WebApplications.WebApplication)
         {
             $webAppUrl = $(($webAppConfig.url).TrimEnd("/"))+":"+$($webAppConfig.Port)
@@ -7115,7 +7128,7 @@ Function Add-SharePointPSSnapin
         Write-Host -ForegroundColor White " - Loading SharePoint PowerShell Snapin..."
         # Added the line below to match what the SharePoint.ps1 file implements (normally called via the SharePoint Management Shell Start Menu shortcut)
         If (Confirm-LocalSession) {$Host.Runspace.ThreadOptions = "ReuseThread"}
-        Add-PsSnapin Microsoft.SharePoint.PowerShell -ErrorAction Stop | Out-Null
+        Add-PsSnapin Microsoft.SharePoint.PowerShell -ErrorAction SilentlyContinue | Out-Null
         WriteLine
     }
 }
@@ -8049,7 +8062,7 @@ Function Stop-DefaultWebsite ()
 function Get-MajorVersionNumber ($spYear)
 {
     # Create hash tables with major version to product year mappings & vice-versa
-    $spVersions = @{"2010" = "14"; "2013" = "15"; "2016" = "16"; "2019" = "16"} # SharePoint 2019 still uses major build 16
+    $spVersions = @{"2010" = "14"; "2013" = "15"; "2016" = "16"; "2019" = "16"; "2022" = "16"} # SharePoint 2019 and Subscription Edition still use major build 16
     $spVer = $spVersions.$spYear
     return $spVer
 }

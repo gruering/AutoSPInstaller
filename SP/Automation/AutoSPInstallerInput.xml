@@ -23,9 +23,9 @@
      The Version attribute is now used for comparing the XML schema version with the version of the script (specifically, AutoSPInstallerFunctions.ps1), as there may be dependencies between XML and script elements. -->
 <Configuration Environment="Dev" Version="3.99.70">
     <!-- The Install section controls what modifications are made to the Windows OS prior to installation and how the SharePoint installation is run.
-         You can also explicitly state the SPVersion of SharePoint being installed, (in case you have binaries for SP2010/SP2013/SP2016/SP2019 in your folder structure).
-         Allowed values are "2010", "2013", "2016" or "2019". If you omit this, the script will attempt to determine the version anyhow, and default to 2013 if multiple sets of install files are present. -->
-    <Install SPVersion="2019">
+         You can also explicitly state the SPVersion of SharePoint being installed, (in case you have binaries for SP2010/SP2013/SP2016/SP2019/SPSE in your folder structure).
+         Allowed values are "2010", "2013", "2016", "2019" or "2022". If you omit this, the script will attempt to determine the version anyhow, and default to 2013 if multiple sets of install files are present. -->
+    <Install SPVersion="2022">
         <!-- The following few elements are parameters for the file containing the unattended install settings for SharePoint's setup.exe. Normally this is called config.xml.
              AutoSPInstaller can now create this file if it doesn't already exist (based on the ConfigFile name), and use the values below for PIDKey and SKU. -->
         <ConfigFile>config-AutoSPInstaller.xml</ConfigFile>
@@ -89,7 +89,7 @@
         <!-- Which server(s) to provision CentralAdmin on. Specify "true" or a list of servers -->
         <CentralAdmin Provision="localhost">
             <Database>Content_CentralAdmin</Database>
-            <Port>2019</Port>
+            <Port>2022</Port>
             <UseSSL>true</UseSSL>
         </CentralAdmin>
         <Database>
@@ -139,7 +139,7 @@
             <FoundationWebApplication Start="localhost" />
         </Services>
       <!-- ServerRoles is for SharePoint 2016+ only. Valid choices are: WebFrontEnd, Application, DistributedCache, Search, Custom, and SingleServerFarm.
-           If you have slipstreamed or are applying SharePoint 2016 Feature Pack 1 at install time or are using SharePoint 2019, you also have WebFrontEndWithDistributedCache and ApplicationWithSearch to choose from.
+           If you have slipstreamed or are applying SharePoint 2016 Feature Pack 1 at install time or are using SharePoint 2019 or newer, you also have WebFrontEndWithDistributedCache and ApplicationWithSearch to choose from.
            A server name can only be provisioned in ONE role, so make sure you don't repeat server names within the elements below. If you don't specify a role for a server, Custom will be assumed. -->
       <ServerRoles>
         <WebFrontEnd Provision="false" />
